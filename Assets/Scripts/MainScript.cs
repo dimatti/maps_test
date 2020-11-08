@@ -32,6 +32,9 @@ public class MainScript : MonoBehaviour
     [Serializable]
     public class Point
     {
+        public string question;
+        public string answer;
+        public string tip;
         public bool is_answered_correctly;
         public bool is_help_used;
         public bool is_tip_used;
@@ -69,6 +72,18 @@ public class MainScript : MonoBehaviour
     public class DistanceInfo
     {
         public List<SPoint> points;
+    }
+
+    [Serializable]
+    public class Question
+    {
+        public string question;
+        public string tip;
+    }
+    [Serializable]
+    public class CheckQuestion
+    {
+        public bool result;
     }
 
     public class ResultMiniGame
@@ -114,6 +129,21 @@ public class MainScript : MonoBehaviour
     [SerializeField]
     public Image image;
 
+    [SerializeField]
+    public GameObject questionPanel;
+
+    [SerializeField]
+    public Text question;
+
+    [SerializeField]
+    public Text tip;
+
+    [SerializeField]
+    public InputField answer;
+
+    [SerializeField]
+    public Text resultCurrentQuestion;
+
     private float _timer;
     private float _waitTime;
 
@@ -138,6 +168,10 @@ public class MainScript : MonoBehaviour
 
     private float compassDiff;
 
+    private bool isAnswerMode;
+
+    private int currentPoint;
+
 
     // Start is called before the first frame update
     void Start()
@@ -157,6 +191,7 @@ public class MainScript : MonoBehaviour
         resultMiniGame = new ResultMiniGame();
         Input.compass.enabled = true;
         Input.location.Start();
+        questionPanel.SetActive(false);
     }
 
     // Update is called once per frame
@@ -170,7 +205,7 @@ public class MainScript : MonoBehaviour
 
         if (_timer >= _waitTime)
         {
-            if (isGame)
+            if (isGame && !isAnswerMode)
             {
                 CheckInfo();
             }
@@ -256,6 +291,7 @@ public class MainScript : MonoBehaviour
                 OnlineMapsMarker m = markers[resultCheck.point];
                 m.SetPosition(resultCheck.lon, resultCheck.lat);
                 map.Redraw();
+                SetQuestion(resultCheck.point);
                 if (resultCheck.point == 0)
                 {
                     resultMiniGame.First = true;
@@ -278,6 +314,31 @@ public class MainScript : MonoBehaviour
                     result.text = "You are a winner!";
                 }
             }
+        }
+    }
+
+    public void SetQuestion(int index)
+    {
+        isAnswerMode = true;
+        questionPanel.SetActive(true);
+        Debug.Log(index);
+        Question result = GetQuestion(currentGame, index);
+        question.text = result.question;
+        tip.text = result.tip;
+        currentPoint = index;
+    }
+
+    public void OnAnswerClick()
+    {
+        isAnswerMode = false;
+        questionPanel.SetActive(false);
+        CheckQuestion res = CheckAnswer(currentGame, currentPoint, answer.text);
+        if (res.result)
+        {
+            resultCurrentQuestion.text = "You answered correctly";
+        } else
+        {
+            resultCurrentQuestion.text = "You answered wrong";
         }
     }
 
@@ -326,5 +387,37 @@ public class MainScript : MonoBehaviour
         return myDeserializedClass;
     }
 
+    public Question GetQuestion(int gameId, int index)
+    {
+        var Data = new WWWForm();
+        Data.AddField("id", gameId);
+        Data.AddField("index", index);
+        var Query = new WWW("http://quizitor.pythonanywhere.com/mini_game/get_question/", Data);
+        while (!Query.isDone)
+        {
+
+        }
+        string status = Query.text;
+        Debug.Log(status);
+        Question myDeserializedClass = JsonUtility.FromJson<Question>(status);
+        return myDeserializedClass;
+    }
+
+    public CheckQuestion CheckAnswer(int gameId, int index, string answer)
+    {
+        var Data = new WWWForm();
+        Data.AddField("id", gameId);
+        Data.AddField("index", index);
+        Data.AddField("answer", answer);
+        var Query = new WWW("http://quizitor.pythonanywhere.com/mini_game/check_answer/", Data);
+        while (!Query.isDone)
+        {
+
+        }
+        string status = Query.text;
+        Debug.Log(status);
+        CheckQuestion myDeserializedClass = JsonUtility.FromJson<CheckQuestion>(status);
+        return myDeserializedClass;
+    }
 
 }
