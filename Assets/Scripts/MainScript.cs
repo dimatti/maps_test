@@ -25,8 +25,8 @@ public class MainScript : MonoBehaviour
     [Serializable]
     public class Coordinates
     {
-        public double? lat;
-        public double? lon;
+        public double lat;
+        public double lon;
     }
 
     [Serializable]
@@ -81,7 +81,7 @@ public class MainScript : MonoBehaviour
         public string tip;
     }
     [Serializable]
-    public class CheckQuestion
+    public class RequestSimpleResult
     {
         public bool result;
     }
@@ -172,10 +172,23 @@ public class MainScript : MonoBehaviour
 
     private int currentPoint;
 
+    private List<Point> statusPoints;
+
 
     // Start is called before the first frame update
     void Start()
     {
+        currentGame = DataHolder.GameNumber;
+        Status status;
+        statusPoints = new List<Point>();
+        if (currentGame != 0)
+        {
+            status = GetStatus(currentGame);
+            markerStart = OnlineMapsMarkerManager.CreateItem(status.start.lon, status.start.lat, markerTextureStart, "Start");
+            markerFinish = OnlineMapsMarkerManager.CreateItem(status.finish.lon, status.finish.lat, markerTextureFinish, "Finish");
+            isGame = true;
+            statusPoints = status.points;
+        }
         _waitTime = 3f;
         marker1 = OnlineMapsMarkerManager.CreateItem(0, 0, markerTexture1, "My Marker 1");
         marker2 = OnlineMapsMarkerManager.CreateItem(0, 0, markerTexture2, "My Marker 2");
@@ -183,8 +196,6 @@ public class MainScript : MonoBehaviour
         marker4 = OnlineMapsMarkerManager.CreateItem(0, 0, markerTexture4, "My Marker 4");
         markerUser = OnlineMapsMarkerManager.CreateItem(0, 0, markerTextureUser, "User");
 
-        inputCluster.text = "0";
-        inputCurrentGame.text = "0";
         markers = new OnlineMapsMarker[4] { marker1, marker2, marker3, marker4 };
         curreintPointIndex = 0;
         curreintPointPreIndex = 0;
@@ -199,8 +210,6 @@ public class MainScript : MonoBehaviour
     {
         markerUser.SetPosition(map.position.x, map.position.y);
         markerUser.rotationDegree = -compassDiff;
-        //resultCurrent.text = string.Format("{0}", (int)(Input.compass.trueHeading/5)*5);
-        //compass.eulerAngles = new Vector3(0, 0, Input.compass.trueHeading + compassDiff);
         _timer += Time.deltaTime;
 
         if (_timer >= _waitTime)
@@ -218,7 +227,10 @@ public class MainScript : MonoBehaviour
     private void CheckInfo()
     {
         DistanceInfo di = GetDistances(currentGame, map.position.y, map.position.x);
-        Debug.Log(di.points);
+        Debug.Log("??????");
+        Debug.Log(curreintPointIndex);
+        Debug.Log(di.points.Count);
+        Debug.Log(currentGame);
         SPoint p = di.points[curreintPointIndex];
         int max_len = di.points.Count;
         //result.text = string.Format("Point {0} back azimuth {1}; forward azimuth {2}; distance {3}", curreintPointIndex+1, p.b_az, p.f_az, p.distance);
@@ -278,11 +290,15 @@ public class MainScript : MonoBehaviour
             markerStart = OnlineMapsMarkerManager.CreateItem(status.start.lon, status.start.lat, markerTextureStart, "Start");
             markerFinish = OnlineMapsMarkerManager.CreateItem(status.finish.lon, status.finish.lat, markerTextureFinish, "Finish");
             isGame = true;
+            statusPoints = status.points;
         }
     }
 
     public void Check()
     {
+        //RequestSimpleResult result;
+        //result = UpdateInfo(currentGame, currentPoint, true, false, true, true);
+        
         if (isGame) {
             CheckResult resultCheck = Check(currentGame, map.position.y, map.position.x);
             if (resultCheck.point != -1)
@@ -321,7 +337,6 @@ public class MainScript : MonoBehaviour
     {
         isAnswerMode = true;
         questionPanel.SetActive(true);
-        Debug.Log(index);
         Question result = GetQuestion(currentGame, index);
         question.text = result.question;
         tip.text = result.tip;
@@ -332,7 +347,7 @@ public class MainScript : MonoBehaviour
     {
         isAnswerMode = false;
         questionPanel.SetActive(false);
-        CheckQuestion res = CheckAnswer(currentGame, currentPoint, answer.text);
+        RequestSimpleResult res = CheckAnswer(currentGame, currentPoint, answer.text);
         if (res.result)
         {
             resultCurrentQuestion.text = "You answered correctly";
@@ -351,6 +366,7 @@ public class MainScript : MonoBehaviour
 
         }
         string status = Query.text;
+
         Status myDeserializedClass = JsonUtility.FromJson<Status>(status);
         return myDeserializedClass;
     }
@@ -372,19 +388,21 @@ public class MainScript : MonoBehaviour
 
     public DistanceInfo GetDistances(int gameId, double lat, double lon)
     {
-        var Data = new WWWForm();
-        Data.AddField("id", gameId);
-        Data.AddField("lat", lat.ToString(CultureInfo.InvariantCulture));
-        Data.AddField("lon", lon.ToString(CultureInfo.InvariantCulture));
-        var Query = new WWW("http://quizitor.pythonanywhere.com/mini_game/get_distances/", Data);
-        while (!Query.isDone)
+        var result = new DistanceInfo();
+        result.points = new List<SPoint>();
+        foreach (Point point in statusPoints)
         {
-
+            var p = new SPoint();
+            p.distance = OnlineMapsUtils.DistanceBetweenPoints((double)point.coordinates.lon, (double)point.coordinates.lat, 0, map.position.x, map.position.y, 0) * 1000;
+            p.f_az = DegreeBearing(map.position.x, map.position.y, point.coordinates.lon, point.coordinates.lat) + 180;
+            p.b_az = DegreeBearing(map.position.x, map.position.y, point.coordinates.lon, point.coordinates.lat) + 180;
+            Debug.Log(p.distance);
+            Debug.Log(p.f_az);
+            result.points.Add(p);
         }
-        string status = Query.text;
-        Debug.Log(status);
-        DistanceInfo myDeserializedClass = JsonUtility.FromJson<DistanceInfo>(status);
-        return myDeserializedClass;
+        Debug.Log("-------------");
+        Debug.Log(result.points.Count);
+        return result;
     }
 
     public Question GetQuestion(int gameId, int index)
@@ -403,7 +421,7 @@ public class MainScript : MonoBehaviour
         return myDeserializedClass;
     }
 
-    public CheckQuestion CheckAnswer(int gameId, int index, string answer)
+    public RequestSimpleResult CheckAnswer(int gameId, int index, string answer)
     {
         var Data = new WWWForm();
         Data.AddField("id", gameId);
@@ -416,8 +434,65 @@ public class MainScript : MonoBehaviour
         }
         string status = Query.text;
         Debug.Log(status);
-        CheckQuestion myDeserializedClass = JsonUtility.FromJson<CheckQuestion>(status);
+        RequestSimpleResult myDeserializedClass = JsonUtility.FromJson<RequestSimpleResult>(status);
         return myDeserializedClass;
+    }
+
+    public RequestSimpleResult UpdateInfo(int gameId, int index, bool is_checked, bool is_answered_correctly, bool is_tip_used, bool is_help_used)
+    {
+        var Data = new WWWForm();
+        Data.AddField("id", gameId);
+        Data.AddField("index", index);
+        Data.AddField("is_checked", BoolToInt(is_checked));
+        Data.AddField("is_answered_correctly", BoolToInt(is_answered_correctly));
+        Data.AddField("is_tip_used", BoolToInt(is_tip_used));
+        Data.AddField("is_help_used", BoolToInt(is_help_used));
+        var Query = new WWW("http://quizitor.pythonanywhere.com/mini_game/update_info/", Data);
+        while (!Query.isDone)
+        {
+
+        }
+        string status = Query.text;
+        Debug.Log(status);
+        RequestSimpleResult myDeserializedClass = JsonUtility.FromJson<RequestSimpleResult>(status);
+        return myDeserializedClass;
+    }
+
+    private int BoolToInt(bool b)
+    {
+        if (b)
+        {
+            return 1;
+        }
+        return 0;
+    }
+
+    static double DegreeBearing(
+    double lon1, double lat1,
+    double lon2, double lat2)
+    {
+        var dLon = ToRad(lon2 - lon1);
+        var dPhi = Math.Log(
+            Math.Tan(ToRad(lat2) / 2 + Math.PI / 4) / Math.Tan(ToRad(lat1) / 2 + Math.PI / 4));
+        if (Math.Abs(dLon) > Math.PI)
+            dLon = dLon > 0 ? -(2 * Math.PI - dLon) : (2 * Math.PI + dLon);
+        return ToBearing(Math.Atan2(dLon, dPhi));
+    }
+
+    public static double ToRad(double degrees)
+    {
+        return degrees * (Math.PI / 180);
+    }
+
+    public static double ToDegrees(double radians)
+    {
+        return radians * 180 / Math.PI;
+    }
+
+    public static double ToBearing(double radians)
+    {
+        // convert radians to degrees (as bearing: 0...360)
+        return (ToDegrees(radians) + 360) % 360;
     }
 
 }
