@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using System.Globalization;
 using System;
 using InfinityCode.OnlineMapsExamples;
+using TMPro;
 
 public class MainScript : MonoBehaviour
 {
@@ -144,6 +145,9 @@ public class MainScript : MonoBehaviour
     [SerializeField]
     public Text resultCurrentQuestion;
 
+    [SerializeField]
+    public TMP_Text timeText;
+
     private float _timer;
     private float _waitTime;
 
@@ -174,6 +178,8 @@ public class MainScript : MonoBehaviour
 
     private List<Point> statusPoints;
 
+    private DateTime startTime;
+
 
     // Start is called before the first frame update
     void Start()
@@ -203,11 +209,13 @@ public class MainScript : MonoBehaviour
         Input.compass.enabled = true;
         Input.location.Start();
         questionPanel.SetActive(false);
+        startTime = DateTime.Now;
     }
 
     // Update is called once per frame
     void Update()
     {
+        timeText.text = (DateTime.Now - startTime).ToString();
         markerUser.SetPosition(map.position.x, map.position.y);
         markerUser.rotationDegree = -compassDiff;
         _timer += Time.deltaTime;
@@ -246,6 +254,11 @@ public class MainScript : MonoBehaviour
         image.color = Color.yellow;
         if (p.distance < 50f)
         {
+            Debug.Log(resultMiniGame.First);
+            if ((curreintPointIndex == 0 & !resultMiniGame.First) | (curreintPointIndex == 1 & !resultMiniGame.Second) | (curreintPointIndex == 2 & !resultMiniGame.Third) | (curreintPointIndex == 3 && !resultMiniGame.Fourth)) {
+                Check();
+            }
+            
             image.color = Color.red;
         }
         curreintPointPreIndex++;
@@ -303,24 +316,26 @@ public class MainScript : MonoBehaviour
             CheckResult resultCheck = Check(currentGame, map.position.y, map.position.x);
             if (resultCheck.point != -1)
             {
-                resultCurrent.text = string.Format("Point {0} was found!", resultCheck.point+1);
+                resultCurrent.text = string.Format("Point {0} was found!", curreintPointIndex + 1);
                 OnlineMapsMarker m = markers[resultCheck.point];
                 m.SetPosition(resultCheck.lon, resultCheck.lat);
                 map.Redraw();
-                SetQuestion(resultCheck.point);
-                if (resultCheck.point == 0)
+                Debug.Log("R");
+                Debug.Log(resultCheck.point);
+                SetQuestion(curreintPointIndex);
+                if (curreintPointIndex == 0)
                 {
                     resultMiniGame.First = true;
                 }
-                if (resultCheck.point == 1)
+                if (curreintPointIndex == 1)
                 {
                     resultMiniGame.Second = true;
                 }
-                if (resultCheck.point == 2)
+                if (curreintPointIndex == 2)
                 {
                     resultMiniGame.Third = true;
                 }
-                if (resultCheck.point == 3)
+                if (curreintPointIndex == 3)
                 {
                     resultMiniGame.Fourth = true;
                 }
@@ -340,6 +355,7 @@ public class MainScript : MonoBehaviour
         Question result = GetQuestion(currentGame, index);
         question.text = result.question;
         tip.text = result.tip;
+        tip.enabled = false;
         currentPoint = index;
     }
 
@@ -355,6 +371,11 @@ public class MainScript : MonoBehaviour
         {
             resultCurrentQuestion.text = "You answered wrong";
         }
+    }
+
+    public void OnShowTipClick()
+    {
+        tip.enabled = true;
     }
 
     public Status GetStatus(int gameId)
@@ -388,21 +409,19 @@ public class MainScript : MonoBehaviour
 
     public DistanceInfo GetDistances(int gameId, double lat, double lon)
     {
-        var result = new DistanceInfo();
-        result.points = new List<SPoint>();
-        foreach (Point point in statusPoints)
+        var Data = new WWWForm();
+        Data.AddField("id", gameId);
+        Data.AddField("lat", lat.ToString(CultureInfo.InvariantCulture));
+        Data.AddField("lon", lon.ToString(CultureInfo.InvariantCulture));
+        var Query = new WWW("http://quizitor.pythonanywhere.com/mini_game/get_distances/", Data);
+        while (!Query.isDone)
         {
-            var p = new SPoint();
-            p.distance = OnlineMapsUtils.DistanceBetweenPoints((double)point.coordinates.lon, (double)point.coordinates.lat, 0, map.position.x, map.position.y, 0) * 1000;
-            p.f_az = DegreeBearing(map.position.x, map.position.y, point.coordinates.lon, point.coordinates.lat) + 180;
-            p.b_az = DegreeBearing(map.position.x, map.position.y, point.coordinates.lon, point.coordinates.lat) + 180;
-            Debug.Log(p.distance);
-            Debug.Log(p.f_az);
-            result.points.Add(p);
+
         }
-        Debug.Log("-------------");
-        Debug.Log(result.points.Count);
-        return result;
+        string status = Query.text;
+        Debug.Log(status);
+        DistanceInfo myDeserializedClass = JsonUtility.FromJson<DistanceInfo>(status);
+        return myDeserializedClass;
     }
 
     public Question GetQuestion(int gameId, int index)
