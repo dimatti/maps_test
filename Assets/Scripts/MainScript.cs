@@ -128,9 +128,6 @@ public class MainScript : MonoBehaviour
     public Transform compass;
 
     [SerializeField]
-    public Image image;
-
-    [SerializeField]
     public GameObject questionPanel;
 
     [SerializeField]
@@ -147,6 +144,31 @@ public class MainScript : MonoBehaviour
 
     [SerializeField]
     public TMP_Text timeText;
+
+    [SerializeField]
+    public Texture2D markerDinstance1;
+    [SerializeField]
+    public Texture2D markerDinstance2;
+    [SerializeField]
+    public Texture2D markerDinstance3;
+    [SerializeField]
+    public Texture2D markerDinstance4;
+    [SerializeField]
+    public Texture2D markerDinstance5;
+    [SerializeField]
+    public Texture2D markerDinstance6;
+    [SerializeField]
+    public Texture2D markerDinstance7;
+    [SerializeField]
+    public Texture2D markerDinstance8;
+    [SerializeField]
+    public Texture2D markerDinstance9;
+    [SerializeField]
+    public Texture2D markerDinstance10;
+    [SerializeField]
+    public Texture2D markerDinstance11;
+    [SerializeField]
+    public Texture2D markerDinstance12;
 
     private float _timer;
     private float _waitTime;
@@ -215,7 +237,7 @@ public class MainScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        timeText.text = (DateTime.Now - startTime).ToString();
+        timeText.text = Convert.ToInt64((DateTime.Now - startTime).TotalSeconds).ToString();
         markerUser.SetPosition(map.position.x, map.position.y);
         markerUser.rotationDegree = -compassDiff;
         _timer += Time.deltaTime;
@@ -243,15 +265,15 @@ public class MainScript : MonoBehaviour
         int max_len = di.points.Count;
         //result.text = string.Format("Point {0} back azimuth {1}; forward azimuth {2}; distance {3}", curreintPointIndex+1, p.b_az, p.f_az, p.distance);
         result.text = string.Format("Point {0}", curreintPointIndex + 1);
-        compass.eulerAngles = new Vector3(0, 0, (float)p.f_az - 90);
+        //compass.eulerAngles = new Vector3(0, 0, (float)p.f_az - 90);
         compassDiff = (float)p.f_az - 90;
         float d = 2000 - (float)p.distance;
         if (d < 0)
         {
             d = 0;
         }
-        image.fillAmount = d/2000;
-        image.color = Color.yellow;
+
+        markerUser.texture = TextureSelection(d / 2000);
         if (p.distance < 50f)
         {
             Debug.Log(resultMiniGame.First);
@@ -259,7 +281,6 @@ public class MainScript : MonoBehaviour
                 Check();
             }
             
-            image.color = Color.red;
         }
         curreintPointPreIndex++;
         if (curreintPointPreIndex == 3)
@@ -512,6 +533,54 @@ public class MainScript : MonoBehaviour
     {
         // convert radians to degrees (as bearing: 0...360)
         return (ToDegrees(radians) + 360) % 360;
+    }
+
+    public Texture2D TextureSelection(double distance)
+    {
+        if (distance < 0.0833) {
+            return markerDinstance1;
+        }
+        if (distance < 2*0.0833)
+        {
+            return markerDinstance2;
+        }
+        if (distance < 3*0.0833)
+        {
+            return markerDinstance3;
+        }
+        if (distance < 4 * 0.0833)
+        {
+            return markerDinstance4;
+        }
+        if (distance < 5 * 0.0833)
+        {
+            return markerDinstance5;
+        }
+        if (distance < 6 * 0.0833)
+        {
+            return markerDinstance6;
+        }
+        if (distance < 7 * 0.0833)
+        {
+            return markerDinstance7;
+        }
+        if (distance < 8 * 0.0833)
+        {
+            return markerDinstance8;
+        }
+        if (distance < 9 * 0.0833)
+        {
+            return markerDinstance9;
+        }
+        if (distance < 10 * 0.0833)
+        {
+            return markerDinstance10;
+        }
+        if (distance < 11 * 0.0833)
+        {
+            return markerDinstance11;
+        }
+        return markerDinstance12;
     }
 
 }
