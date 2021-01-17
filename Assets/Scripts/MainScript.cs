@@ -169,6 +169,26 @@ public class MainScript : MonoBehaviour
     public Texture2D markerDinstance11;
     [SerializeField]
     public Texture2D markerDinstance12;
+    [SerializeField]
+    public Texture2D markerDinstance13;
+    [SerializeField]
+    public Texture2D markerDinstance14;
+    [SerializeField]
+    public Texture2D markerDinstance15;
+    [SerializeField]
+    public Texture2D markerDinstance16;
+
+    [SerializeField]
+    public Sprite numb1;
+    [SerializeField]
+    public Sprite numb2;
+    [SerializeField]
+    public Sprite numb3;
+    [SerializeField]
+    public Sprite numb4;
+
+    [SerializeField]
+    public Image pointNumberIndicator;
 
     private float _timer;
     private float _waitTime;
@@ -202,6 +222,10 @@ public class MainScript : MonoBehaviour
 
     private DateTime startTime;
 
+    private int max_len = 4; //TODO FIX
+
+    private bool isCheckingNow = false;
+
 
     // Start is called before the first frame update
     void Start()
@@ -217,13 +241,13 @@ public class MainScript : MonoBehaviour
             isGame = true;
             statusPoints = status.points;
         }
-        _waitTime = 3f;
+        _waitTime = 5f;
         marker1 = OnlineMapsMarkerManager.CreateItem(0, 0, markerTexture1, "My Marker 1");
         marker2 = OnlineMapsMarkerManager.CreateItem(0, 0, markerTexture2, "My Marker 2");
         marker3 = OnlineMapsMarkerManager.CreateItem(0, 0, markerTexture3, "My Marker 3");
         marker4 = OnlineMapsMarkerManager.CreateItem(0, 0, markerTexture4, "My Marker 4");
         markerUser = OnlineMapsMarkerManager.CreateItem(0, 0, markerTextureUser, "User");
-
+        markerUser.align = OnlineMapsAlign.Center;
         markers = new OnlineMapsMarker[4] { marker1, marker2, marker3, marker4 };
         curreintPointIndex = 0;
         curreintPointPreIndex = 0;
@@ -248,7 +272,7 @@ public class MainScript : MonoBehaviour
             {
                 CheckInfo();
             }
-            
+
             _timer = 0f;
 
         }
@@ -256,16 +280,15 @@ public class MainScript : MonoBehaviour
 
     private void CheckInfo()
     {
+        if (isCheckingNow)
+        {
+            return;
+        }
+        isCheckingNow = true;
         DistanceInfo di = GetDistances(currentGame, map.position.y, map.position.x);
-        Debug.Log("??????");
-        Debug.Log(curreintPointIndex);
-        Debug.Log(di.points.Count);
-        Debug.Log(currentGame);
         SPoint p = di.points[curreintPointIndex];
-        int max_len = di.points.Count;
-        //result.text = string.Format("Point {0} back azimuth {1}; forward azimuth {2}; distance {3}", curreintPointIndex+1, p.b_az, p.f_az, p.distance);
-        result.text = string.Format("Point {0}", curreintPointIndex + 1);
-        //compass.eulerAngles = new Vector3(0, 0, (float)p.f_az - 90);
+        max_len = di.points.Count;
+        //result.text = string.Format("Point {0}", curreintPointIndex + 1);
         compassDiff = (float)p.f_az - 90;
         float d = 2000 - (float)p.distance;
         if (d < 0)
@@ -276,24 +299,12 @@ public class MainScript : MonoBehaviour
         markerUser.texture = TextureSelection(d / 2000);
         if (p.distance < 50f)
         {
-            Debug.Log(resultMiniGame.First);
             if ((curreintPointIndex == 0 & !resultMiniGame.First) | (curreintPointIndex == 1 & !resultMiniGame.Second) | (curreintPointIndex == 2 & !resultMiniGame.Third) | (curreintPointIndex == 3 && !resultMiniGame.Fourth)) {
                 Check();
             }
-            
-        }
-        curreintPointPreIndex++;
-        if (curreintPointPreIndex == 3)
-        {
-            curreintPointIndex++;
-            if (curreintPointIndex == max_len)
-            {
-                curreintPointIndex = 0;
-            }
-            curreintPointPreIndex = 0;
-        }
-        
 
+        }
+        isCheckingNow = false;
     }
 
     public void OnClick()
@@ -332,7 +343,7 @@ public class MainScript : MonoBehaviour
     {
         //RequestSimpleResult result;
         //result = UpdateInfo(currentGame, currentPoint, true, false, true, true);
-        
+
         if (isGame) {
             CheckResult resultCheck = Check(currentGame, map.position.y, map.position.x);
             if (resultCheck.point != -1)
@@ -343,20 +354,20 @@ public class MainScript : MonoBehaviour
                 map.Redraw();
                 Debug.Log("R");
                 Debug.Log(resultCheck.point);
-                SetQuestion(curreintPointIndex);
-                if (curreintPointIndex == 0)
+                SetQuestion(resultCheck.point);
+                if (resultCheck.point == 0)
                 {
                     resultMiniGame.First = true;
                 }
-                if (curreintPointIndex == 1)
+                if (resultCheck.point == 1)
                 {
                     resultMiniGame.Second = true;
                 }
-                if (curreintPointIndex == 2)
+                if (resultCheck.point == 2)
                 {
                     resultMiniGame.Third = true;
                 }
-                if (curreintPointIndex == 3)
+                if (resultCheck.point == 3)
                 {
                     resultMiniGame.Fourth = true;
                 }
@@ -537,50 +548,125 @@ public class MainScript : MonoBehaviour
 
     public Texture2D TextureSelection(double distance)
     {
-        if (distance < 0.0833) {
+        if (distance < 0.0625) {
             return markerDinstance1;
         }
-        if (distance < 2*0.0833)
+        if (distance < 2 * 0.0625)
         {
             return markerDinstance2;
         }
-        if (distance < 3*0.0833)
+        if (distance < 3 * 0.0625)
         {
             return markerDinstance3;
         }
-        if (distance < 4 * 0.0833)
+        if (distance < 4 * 0.0625)
         {
             return markerDinstance4;
         }
-        if (distance < 5 * 0.0833)
+        if (distance < 5 * 0.0625)
         {
             return markerDinstance5;
         }
-        if (distance < 6 * 0.0833)
+        if (distance < 6 * 0.0625)
         {
             return markerDinstance6;
         }
-        if (distance < 7 * 0.0833)
+        if (distance < 7 * 0.0625)
         {
             return markerDinstance7;
         }
-        if (distance < 8 * 0.0833)
+        if (distance < 8 * 0.0625)
         {
             return markerDinstance8;
         }
-        if (distance < 9 * 0.0833)
+        if (distance < 9 * 0.0625)
         {
             return markerDinstance9;
         }
-        if (distance < 10 * 0.0833)
+        if (distance < 10 * 0.0625)
         {
             return markerDinstance10;
         }
-        if (distance < 11 * 0.0833)
+        if (distance < 11 * 0.0625)
         {
             return markerDinstance11;
         }
-        return markerDinstance12;
+        if (distance < 12 * 0.0625)
+        {
+            return markerDinstance12;
+        }
+        if (distance < 13 * 0.0625)
+        {
+            return markerDinstance13;
+        }
+        if (distance < 14 * 0.0625)
+        {
+            return markerDinstance14;
+        }
+        if (distance < 15 * 0.0625)
+        {
+            return markerDinstance15;
+        }
+        return markerDinstance16;
     }
 
+    public void PrevPoint()
+    {
+        STARTPREV:
+        curreintPointIndex--;
+        if (!isValidIndex(curreintPointIndex))
+        {
+            goto STARTPREV;
+        }
+        if (curreintPointIndex < 0)
+        {
+            curreintPointIndex = max_len - 1;
+        }
+        setPointNumberIndicator(curreintPointIndex);
+        CheckInfo();
+    }
+
+    public void NextPoint()
+    {
+    STARTNEXT:
+        curreintPointIndex++;
+        if (!isValidIndex(curreintPointIndex))
+        {
+            goto STARTNEXT;
+        }
+        if (curreintPointIndex >= max_len)
+        {
+            curreintPointIndex = 0;
+        }
+        setPointNumberIndicator(curreintPointIndex);
+        CheckInfo();
+    }
+
+    private bool isValidIndex(int index)
+    {
+        if ((index == 0 & resultMiniGame.First) | (index == 1 & resultMiniGame.Second) | (index == 2 & resultMiniGame.Third) | (index == 3 && resultMiniGame.Fourth))
+        {
+            return false;
+        }
+        return true;
+    }
+
+    private void setPointNumberIndicator(int n)
+    {
+        if (n == 0)
+        {
+            pointNumberIndicator.sprite = numb1;
+        } 
+        else if (n==1)
+        {
+            pointNumberIndicator.sprite = numb2;
+        }
+        else if (n == 2)
+        {
+            pointNumberIndicator.sprite = numb3;
+        } else
+        {
+            pointNumberIndicator.sprite = numb4;
+        }
+    }
 }
