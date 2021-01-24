@@ -122,7 +122,7 @@ public class MainScript : MonoBehaviour
     public Text result;
 
     [SerializeField]
-    public Text resultCurrent;
+    public Text resultGeneral;
 
     [SerializeField]
     public Transform compass;
@@ -292,14 +292,14 @@ public class MainScript : MonoBehaviour
         max_len = di.points.Count;
         //result.text = string.Format("Point {0}", curreintPointIndex + 1);
         compassDiff = (float)p.f_az - 90;
-        float d = 2000 - (float)p.distance;
+        float d = 1500 - (float)p.distance;
         if (d < 0)
         {
             d = 0;
         }
-
-        markerUser.texture = TextureSelection(d / 2000);
-        if (p.distance < 50f)
+        var isFinish = p.distance < 50f;
+        markerUser.texture = TextureSelection(d / 1500, isFinish);
+        if (isFinish)
         {
             if ((curreintPointIndex == 0 & !resultMiniGame.First) | (curreintPointIndex == 1 & !resultMiniGame.Second) | (curreintPointIndex == 2 & !resultMiniGame.Third) | (curreintPointIndex == 3 && !resultMiniGame.Fourth)) {
                 Check();
@@ -350,7 +350,7 @@ public class MainScript : MonoBehaviour
             CheckResult resultCheck = Check(currentGame, map.position.y, map.position.x);
             if (resultCheck.point != -1)
             {
-                resultCurrent.text = string.Format("Point {0} was found!", curreintPointIndex + 1);
+                resultGeneral.text = string.Format("Point {0} was found!", curreintPointIndex + 1);
                 OnlineMapsMarker m = markers[resultCheck.point];
                 m.SetPosition(resultCheck.lon, resultCheck.lat);
                 map.Redraw();
@@ -376,7 +376,7 @@ public class MainScript : MonoBehaviour
                 if (resultMiniGame.First && resultMiniGame.Second && resultMiniGame.Third && resultMiniGame.Fourth)
                 {
                     isGame = false;
-                    result.text = "You are a winner!";
+                    resultGeneral.text = "You are a winner!";
                 }
             }
         }
@@ -400,10 +400,10 @@ public class MainScript : MonoBehaviour
         RequestSimpleResult res = CheckAnswer(currentGame, currentPoint, answer.text);
         if (res.result)
         {
-            resultCurrentQuestion.text = "You answered correctly";
+            resultGeneral.text = "You answered correctly";
         } else
         {
-            resultCurrentQuestion.text = "You answered wrong";
+            resultGeneral.text = "You answered wrong";
         }
     }
 
@@ -548,8 +548,12 @@ public class MainScript : MonoBehaviour
         return (ToDegrees(radians) + 360) % 360;
     }
 
-    public Texture2D TextureSelection(double distance)
+    public Texture2D TextureSelection(double distance, bool isFinish)
     {
+        if (isFinish)
+        {
+            return markerDinstance16;
+        }
         if (distance < 0.0625) {
             return markerDinstance1;
         }
@@ -605,11 +609,7 @@ public class MainScript : MonoBehaviour
         {
             return markerDinstance14;
         }
-        if (distance < 15 * 0.0625)
-        {
-            return markerDinstance15;
-        }
-        return markerDinstance16;
+        return markerDinstance15;
     }
 
     public void PrevPoint()
