@@ -261,7 +261,9 @@ public class MainScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        timeText.text = Convert.ToInt64((DateTime.Now - startTime).TotalSeconds).ToString();
+        var timeDiff = DateTime.Now - startTime;
+        timeText.text = String.Format("{0}:{1}:{2}", timeDiff.Hours.ToString("D2"), timeDiff.Minutes.ToString("D2"), timeDiff.Seconds.ToString("D2"));
+        //Convert.ToInt64(timeDiff.TotalSeconds).ToString();
         markerUser.SetPosition(map.position.x, map.position.y);
         markerUser.rotationDegree = -compassDiff;
         _timer += Time.deltaTime;
