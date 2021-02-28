@@ -193,6 +193,9 @@ public class MainScript : MonoBehaviour
     private float _timer;
     private float _waitTime;
 
+    private float _timerShlik;
+    private float _waitTimeShlik;
+
     private int cluster;
     private int currentGame;
     private int curreintPointIndex;
@@ -242,6 +245,7 @@ public class MainScript : MonoBehaviour
             statusPoints = status.points;
         }
         _waitTime = 5f;
+        _waitTimeShlik = 15f;
         marker1 = OnlineMapsMarkerManager.CreateItem(0, 0, markerTexture1, "My Marker 1");
         marker2 = OnlineMapsMarkerManager.CreateItem(0, 0, markerTexture2, "My Marker 2");
         marker3 = OnlineMapsMarkerManager.CreateItem(0, 0, markerTexture3, "My Marker 3");
@@ -267,6 +271,16 @@ public class MainScript : MonoBehaviour
         markerUser.SetPosition(map.position.x, map.position.y);
         markerUser.rotationDegree = -compassDiff;
         _timer += Time.deltaTime;
+        _timerShlik += Time.deltaTime;
+
+        if (_timerShlik > _waitTimeShlik)
+        {
+            if (isGame && !isAnswerMode)
+            {
+                NextPoint();
+            }
+            _timerShlik = 0f;
+        }
 
         if (_timer >= _waitTime)
         {
